@@ -1,0 +1,15 @@
+# Server dependencies
+server/node_modules/
+
+# Client dependencies
+client/node_modules/
+
+# React build folder (we build this on the server)
+client/build/
+
+# Environment variables file
+server/.env
+
+# Logs
+*.log
+npm-debug.log*

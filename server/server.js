@@ -2,28 +2,33 @@
 
 const express = require('express');
 const cors = require('cors');
+const path = require('path'); // Import the 'path' module
 require('dotenv').config();
 
-// We are currently not using the database, so this is commented out
-// const connectDB = require('./config/db');
-// connectDB();
-
 const generateTextRoutes = require('./routes/api/generate');
-const visionRoutes = require('./routes/api/vision'); // Import the new vision route
+const visionRoutes = require('./routes/api/vision');
 
 const app = express();
 
-// Increase the body parser limit to handle base64 image strings and place it before cors
 app.use(express.json({ limit: '10mb' }));
 app.use(cors());
 
-// Use the respective routes for each endpoint
+// API Routes
 app.use('/api/generate', generateTextRoutes);
-app.use('/api/vision', visionRoutes); // Use the new vision route
+app.use('/api/vision', visionRoutes);
 
-app.get('/', (req, res) => {
-  res.send('Gemini AI Server is running!');
-});
+// --- NEW: Production Build Configuration ---
+// This code will only run when the server is in 'production' mode (on Render)
+if (process.env.NODE_ENV === 'production') {
+  // Serve the static files from the React app's 'build' directory
+  app.use(express.static(path.join(__dirname, '../client/build')));
+
+  // For any other request that doesn't match an API route, 
+  // serve the React app's index.html file.
+  app.get('*', (req, res) => {
+    res.sendFile(path.resolve(__dirname, '../client/build', 'index.html'));
+  });
+}
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
