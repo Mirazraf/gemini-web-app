@@ -169,7 +169,6 @@ function App() {
     setHistory(prevHistory => [...prevHistory, { type: 'ai', text: '' }]);
 
     try {
-      // Use relative paths for API calls
       let endpoint = '/api/generate';
       let body = {};
       
@@ -235,6 +234,7 @@ function App() {
     }
   };
   
+  // --- REVISED: Custom component for rendering code blocks with robust copy ---
   const CodeBlock = ({ node, inline, className, children, ...props }) => {
     const [isCopied, setIsCopied] = useState(false);
     const match = /language-(\w+)/.exec(className || '');
@@ -243,10 +243,12 @@ function App() {
     const handleCopy = () => {
       const textArea = document.createElement('textarea');
       textArea.value = codeText;
+      
       textArea.style.position = 'fixed';
       textArea.style.left = '-9999px';
+      
       document.body.appendChild(textArea);
-      textArea.focus();
+      
       textArea.select();
       try {
         document.execCommand('copy');
@@ -255,6 +257,7 @@ function App() {
       } catch (err) {
         console.error('Fallback: Oops, unable to copy', err);
       }
+      
       document.body.removeChild(textArea);
     };
     
@@ -290,105 +293,105 @@ function App() {
   };
 
   return (
-    <div className={`main-wrapper ${theme}`}>
-      <main className="chat-container">
-        <header className="chat-header">
-            <div className="header-content">
-                <h1 className="app-title">Elli</h1>
-                <p className="app-subtitle">Your AI Learning Assistant by Rafi</p>
-            </div>
-          <button onClick={toggleTheme} className="theme-toggle-button">
-            {theme === 'light' ? 
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg> : 
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
-            }
+    <div className="app-container">
+      <div className="header">
+        <h1 className="app-title">Elli</h1>
+        <button onClick={toggleTheme} className="theme-toggle-button">
+          {theme === 'light' ? 
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg> : 
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+          }
+        </button>
+      </div>
+      
+      <div className="history-container" onMouseUp={(e) => handleSelection(e)} onTouchEnd={(e) => handleSelection(e.changedTouches[0])}>
+        {selection.text && (
+          <button 
+            className="quote-button" 
+            style={{ top: selection.top, left: selection.left }}
+            onMouseUp={(e) => e.stopPropagation()}
+            onClick={handleQuoteButtonClick}
+          >
+             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/></svg>
+            Quote
           </button>
-        </header>
-        
-        <div className="history-container" onMouseUp={(e) => handleSelection(e)} onTouchEnd={(e) => handleSelection(e.changedTouches[0])}>
-          {history.length === 0 && !loading && (
-            <div className="empty-chat-container">
-              <div className="empty-chat-logo">🎓</div>
-              <h2>How can I help you study today?</h2>
-            </div>
-          )}
-          {history.map((item, index) => (
-            <div key={index} className={`chat-bubble-wrapper ${item.type === 'user' ? 'user-wrapper' : 'ai-wrapper'}`}>
-              <div className={`chat-bubble ${item.type === 'user' ? 'user-bubble' : 'ai-bubble'}`}>
-                {item.type === 'ai' && <ReactMarkdown components={{code: CodeBlock}} remarkPlugins={[remarkGfm]}>{item.text}</ReactMarkdown>}
-                {item.type === 'user' && (
-                  <>
-                    {item.quotedText && <div className="quoted-text-bubble">"{item.quotedText}"</div>}
-                    {item.attachment?.type === 'image' && <img src={item.attachment.preview} alt="Prompt attachment" className="prompt-image-attachment"/>}
-                    {item.attachment?.type === 'doc' && (
-                      <div className="prompt-doc-attachment">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-                        <span>{item.attachment.preview}</span>
-                      </div>
-                    )}
-                    <div className="chat-text">{item.text}</div>
-                  </>
-                )}
-              </div>
-            </div>
-          ))}
-          {loading && (
-            <div className="chat-bubble-wrapper ai-wrapper">
-              <div className="chat-bubble ai-bubble">
-                <div className="typing-indicator">
-                  <span></span><span></span><span></span>
-                </div>
-              </div>
-            </div>
-          )}
-           <div className={`quote-button-container ${selection.text ? 'visible' : ''}`}>
-                <button className="quote-button" onClick={handleQuoteButtonClick}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/></svg>
-                    Quote
-                </button>
-            </div>
-          <div ref={historyEndRef} />
-        </div>
-
-        <div className="form-container">
-          {activeQuote && !attachment && (
-              <div className="quote-preview">
-                  <span>Replying to:</span>
-                  <p>"{activeQuote}"</p>
-                  <button onClick={() => setActiveQuote(null)}>&times;</button>
-              </div>
-          )}
-          {attachment && (
-            <div className="preview-container">
-              {attachment.type === 'image' ? (
-                <img src={attachment.preview} alt="Preview" className="image-preview" />
-              ) : (
-                <div className="doc-preview">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-                  <span>{attachment.preview}</span>
-                </div>
+        )}
+        {history.length === 0 && !loading && (
+          <div className="empty-chat-container">
+            <div className="empty-chat-logo">🎓</div>
+            <h2>I'm Elli, your AI learning assistant. How can I help you study today?</h2>
+          </div>
+        )}
+        {history.map((item, index) => (
+          <div key={index} className={`chat-bubble-wrapper ${item.type === 'user' ? 'user-wrapper' : 'ai-wrapper'}`}>
+            <div className={`chat-bubble ${item.type === 'user' ? 'user-bubble' : 'ai-bubble'}`}>
+              {item.type === 'ai' && <ReactMarkdown components={{code: CodeBlock}} remarkPlugins={[remarkGfm]}>{item.text}</ReactMarkdown>}
+              {item.type === 'user' && (
+                <>
+                  {item.quotedText && <div className="quoted-text-bubble">"{item.quotedText}"</div>}
+                  {item.attachment?.type === 'image' && <img src={item.attachment.preview} alt="Prompt attachment" className="prompt-image-attachment"/>}
+                  {item.attachment?.type === 'doc' && (
+                    <div className="prompt-doc-attachment">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                      <span>{item.attachment.preview}</span>
+                    </div>
+                  )}
+                  <div className="chat-text">{item.text}</div>
+                </>
               )}
-              <button onClick={removeAttachment} className="remove-attachment-btn">&times;</button>
             </div>
-          )}
-          <form onSubmit={handleSubmit} className="prompt-form">
-            <button type="button" className="attach-button" onClick={() => fileInputRef.current.click()} disabled={loading}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.59a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-            </button>
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleFileChange} 
-              style={{ display: 'none' }} 
-              accept="image/*, .txt, .md, .csv, .pdf"
-            />
-            <textarea id="prompt-textarea" ref={promptTextareaRef} className="prompt-textarea" value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Ask Elli anything..." rows="1" onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }} />
-            <button type="submit" className="submit-button" disabled={loading || !prompt.trim()}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="m22 2-11 11"/></svg>
-            </button>
-          </form>
-        </div>
-      </main>
+          </div>
+        ))}
+        {loading && (
+          <div className="chat-bubble-wrapper ai-wrapper">
+            <div className="chat-bubble ai-bubble">
+              <div className="typing-indicator">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+          </div>
+        )}
+        <div ref={historyEndRef} />
+      </div>
+
+      <div className="form-container">
+        {activeQuote && !attachment && (
+            <div className="quote-preview">
+                <span>Replying to:</span>
+                <p>"{activeQuote}"</p>
+                <button onClick={() => setActiveQuote(null)}>&times;</button>
+            </div>
+        )}
+        {attachment && (
+          <div className="preview-container">
+            {attachment.type === 'image' ? (
+              <img src={attachment.preview} alt="Preview" className="image-preview" />
+            ) : (
+              <div className="doc-preview">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                <span>{attachment.preview}</span>
+              </div>
+            )}
+            <button onClick={removeAttachment} className="remove-attachment-btn">&times;</button>
+          </div>
+        )}
+        <form onSubmit={handleSubmit} className="prompt-form">
+          <button type="button" className="attach-button" onClick={() => fileInputRef.current.click()} disabled={loading}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.59a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          </button>
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileChange} 
+            style={{ display: 'none' }} 
+            accept="image/*, .txt, .md, .csv, .pdf"
+          />
+          <textarea id="prompt-textarea" ref={promptTextareaRef} className="prompt-textarea" value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Ask Elli anything..." rows="1" onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }} />
+          <button type="submit" className="submit-button" disabled={loading || !prompt.trim()}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="m22 2-11 11"/></svg>
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
