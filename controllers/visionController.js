@@ -4,16 +4,6 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Function to convert a file buffer to a base64 string
-const fileToGenerativePart = (buffer, mimeType) => {
-  return {
-    inlineData: {
-      data: buffer.toString('base64'),
-      mimeType,
-    },
-  };
-};
-
 const understandImage = async (req, res) => {
   try {
     const { prompt, image, mimeType } = req.body;
@@ -21,21 +11,24 @@ const understandImage = async (req, res) => {
     if (!prompt || !image || !mimeType) {
       return res.status(400).json({ message: 'Prompt, image, and mimeType are required' });
     }
-
-    // Use the gemini-1.5-flash model which is great for multimodal tasks
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
     
-    // The Gemini API requires the image data to be in a specific format
+    // --- NEW: Define Elli's persona for the vision model as well ---
+    const systemInstruction = `You are Elli, a friendly and helpful AI assistant created by Rafi for learning purposes. You are designed to assist students with their questions, explain complex topics, and help with their studies. Your capabilities include analyzing text, understanding the content of images, reading documents (like PDFs and text files) that users upload, and searching the web for real-time information. Always maintain a positive, encouraging, and educational tone. When a user asks "who are you?" or about your identity, introduce yourself as Elli and mention you were created by Rafi.`;
+
+    const model = genAI.getGenerativeModel({ 
+        model: 'gemini-1.5-flash-latest',
+        systemInstruction: systemInstruction, // Apply the same persona
+    });
+    
     const imageParts = [
       {
         inlineData: {
-          data: image, // The frontend will send the base64 string directly
+          data: image,
           mimeType: mimeType
         }
       }
     ];
 
-    // Set headers for a streaming response
     res.setHeader('Content-Type', 'text/plain');
     res.setHeader('Transfer-Encoding', 'chunked');
 
